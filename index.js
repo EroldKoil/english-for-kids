@@ -95,10 +95,6 @@ let wordsArray = [
             {eng:'take',ru:'брать'}]},
 	];
 
-let stats = [
-	{name: 'one', numUse: 0, numErrors:0},
-];
-
 createDocument();
 
 function  createDocument() {
@@ -323,7 +319,6 @@ function openCategory(name) {
 }
 
 playButton.onmousedown = function(){
-    console.log('down');
     playButton.style.boxShadow = '0px 4px 2px 0px rgba(50, 50, 50, 0.72)';
     playButton.onmouseup = function(){
         playButton.style.boxShadow = '0px 4px 12px 0px rgba(50, 50, 50, 0.72)';
@@ -340,9 +335,7 @@ playButton.addEventListener("click", function () {
     let subArray = [];
     wordsInGame = [];
     let cotegoryName = selectedCategory.replace(/....$/,'');
-    console.log('selectedCategory.name = ' + cotegoryName);
     wordsArray.forEach(function (el) {
-        console.log('el.name = ' + el.name);
         if(el.name == cotegoryName){
             wordsInGame = wordsInGame.concat(el.values) ;
             while(wordsInGame.length > 0){
