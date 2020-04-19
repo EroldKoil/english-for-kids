@@ -147,7 +147,7 @@ function  createDocument() {
     mainMenuLink.className = 'leftPanel__line selectedCategory';
     mainMenuLink.innerText = 'menu';
     let statisticLink = document.createElement("div");
-    statisticLink.id = 'results-nav';
+    statisticLink.id = 'statistic-nav';
     statisticLink.className = 'leftPanel__line';
     statisticLink.innerText = 'statistic';
     leftPanel.appendChild(mainMenuLink);
@@ -238,23 +238,50 @@ function  createDocument() {
     leftPanel.addEventListener("click", function (event) {
         let target = event.target;
         if(target.id != 'leftPanel'){
+            endGame();
             if(target.id == 'mainMenu-nav'){
                 categoryOpen.style.display = 'none';
                 resultsDom.style.display = 'none';
                 contentMainMenu.style.display = 'flex';
                 checkboxPanelButton.checked = 0;
                 leftPanel.classList.remove('leftPanelOpen');
-                isGameStart = false;
-                playButton.classList.remove('play-button-in-game');
-
                 document.getElementById(selectedCategory).classList.remove('selectedCategory');
                 selectedCategory = target.id;
                 target.classList.add('selectedCategory');
             }
-            if(target.id == 'statistic-nav'){
+            else if(target.id == 'statistic-nav'){
+
+                document.getElementById(selectedCategory).classList.remove('selectedCategory');
+                selectedCategory = target.id;
+                target.classList.add('selectedCategory');
+                checkboxPanelButton.checked = 0;
+                leftPanel.classList.remove('leftPanelOpen');
+
                 categoryOpen.style.display = 'none';
                 contentMainMenu.style.display = 'none';
                 resultsDom.style.display = 'flex';
+                let table = document.createElement('div');
+                table.className = 'table';
+                resultsDom.innerHTML = '';
+                resultsDom.appendChild(table);
+
+                table.innerHTML = `
+                <div class="table__string">
+                    <div>Слово</div>
+                    <div>Изучал</div>
+                    <div>Ошибки</div>
+                    <div>Успехи</div>
+                </div>`;
+                for(let element in userData){
+                    table.innerHTML +=`
+                    <div class="table__string">
+                        <div>${userData[element].name}</div>
+                        <div>${userData[element].learnCount}</div>                
+                        <div>${userData[element].errorsCount}</div>
+                        <div>${userData[element].successCount}</div>
+                    </div>`;
+                }
+
             }
             else{
                 resultsDom.style.display = 'none';
@@ -307,14 +334,10 @@ function openCategory(name) {
                 rotateButton.className = mode == 'play'?'rotate rotate-invisible' : 'rotate';
                 wordElement.children[0].appendChild(rotateButton);
                 rotateButton.addEventListener("click", function () {
-
+                    setData(word.eng, 'learn');
                     wordElement.children[0].classList.add('card-rotate');
-
-                   // wordElement.classList.add('card-rotate');
                     wordElement.children[0].onmouseleave = function () {
-                       // wordElement.className = 'word-container__card';
                         wordElement.children[0].classList.remove('card-rotate');
-
                     };
                 });
                 wordElement.addEventListener("click", function (event) {
@@ -377,7 +400,7 @@ function nextWord() {
 function checkAnswer(answer) {
     let star = document.createElement('div');
     if(answer == wordInGameNow){
-        setData(answer, true);
+        setData(answer, 'success');
         star.className = 'starSuccess';
         wordsInGame.splice(wordsInGame.length-1,1);
         if(wordsInGame.length > 0){
@@ -403,7 +426,7 @@ function checkAnswer(answer) {
         }
     }
     else{
-        setData(answer, false);
+        setData(answer, 'error');
         audio(`src/error.mp3`);
         setTimeout(audio(`src/categories/${selectedCategory.replace(/....$/,'')}/${wordsInGame[wordsInGame.length - 1].eng}.mp3`), 1000);
         star.className = 'starLose';
@@ -430,16 +453,17 @@ function audio(src) {
 }
 
 function setData(word, result) {
-
     if(userData[word] == undefined){
-        userData[word] = {tryCount: 0, successCount: 0, errorsCount: 0};
+        userData[word] = {name: word, learnCount: 0, successCount: 0, errorsCount: 0};
     }
-    userData[word].tryCount ++;
-    if(result){
+    if(result == 'success'){
         userData[word].successCount ++;
     }
-    else{
+    else if(result == 'error'){
         userData[word].errorsCount ++;
     }
-    localStorage.setItem('userData',JSON.stringify(userData) );
+    else{
+        userData[word].learnCount ++;
+    }
+    localStorage.setItem('userData', JSON.stringify(userData) );
 }

@@ -434,3 +434,28 @@ header{
     justify-content: center;
     align-items: center;
 }
+
+.table{
+    display: block;
+    width: 80%;
+    border: solid 1px;
+    background: linear-gradient(45deg, #a2b0f3, #b9ffec);
+}
+.table__string{
+    display: flex;
+    justify-content: center;
+}
+
+.table__string div {
+    width: 25%;
+    border-top: solid 1px;
+    border-bottom: solid 1px;
+    height: 40px;
+    font-size: 32px;
+}
+
+@media (min-width: 320px) and (max-width:700px){
+    .table__string div {
+        font-size: 20px;
+    }
+}
