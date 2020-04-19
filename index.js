@@ -1,4 +1,4 @@
-let userData = localStorage.getItem('userData') == undefined?null: JSON.parse(localStorage.getItem('userData'));
+let userData = localStorage.getItem('userData') == undefined?{}: JSON.parse(localStorage.getItem('userData'));
 
 let contentMainMenu;
 let leftPanel;
@@ -146,7 +146,12 @@ function  createDocument() {
     mainMenuLink.id = 'mainMenu-nav';
     mainMenuLink.className = 'leftPanel__line selectedCategory';
     mainMenuLink.innerText = 'menu';
+    let statisticLink = document.createElement("div");
+    statisticLink.id = 'results-nav';
+    statisticLink.className = 'leftPanel__line';
+    statisticLink.innerText = 'statistic';
     leftPanel.appendChild(mainMenuLink);
+    leftPanel.appendChild(statisticLink);
 
     wordsArray.forEach(function (el) {
         let link = document.createElement("div");
@@ -235,6 +240,7 @@ function  createDocument() {
         if(target.id != 'leftPanel'){
             if(target.id == 'mainMenu-nav'){
                 categoryOpen.style.display = 'none';
+                resultsDom.style.display = 'none';
                 contentMainMenu.style.display = 'flex';
                 checkboxPanelButton.checked = 0;
                 leftPanel.classList.remove('leftPanelOpen');
@@ -245,7 +251,13 @@ function  createDocument() {
                 selectedCategory = target.id;
                 target.classList.add('selectedCategory');
             }
+            if(target.id == 'statistic-nav'){
+                categoryOpen.style.display = 'none';
+                contentMainMenu.style.display = 'none';
+                resultsDom.style.display = 'flex';
+            }
             else{
+                resultsDom.style.display = 'none';
                 let str = target.id.replace(/....$/,'');
                 openCategory(str);
             }
@@ -295,16 +307,19 @@ function openCategory(name) {
                 rotateButton.className = mode == 'play'?'rotate rotate-invisible' : 'rotate';
                 wordElement.children[0].appendChild(rotateButton);
                 rotateButton.addEventListener("click", function () {
-                    wordElement.classList.add('card-rotate');
-                    wordElement.addEventListener( 'mouseout' ,function () {
-                        wordElement.classList.remove('card-rotate');
-                    });
+
+                    wordElement.children[0].classList.add('card-rotate');
+
+                   // wordElement.classList.add('card-rotate');
+                    wordElement.children[0].onmouseleave = function () {
+                       // wordElement.className = 'word-container__card';
+                        wordElement.children[0].classList.remove('card-rotate');
+
+                    };
                 });
                 wordElement.addEventListener("click", function (event) {
                     if(event.target.className != 'rotate' && mode == 'train') {
-                        let audio = new Audio();
-                        audio.src = `src/categories/${el.name}/${word.eng}.mp3`;
-                        audio.autoplay = true;
+                        audio(`src/categories/${el.name}/${word.eng}.mp3`);
                     }
                     if(isGameStart){
                         checkAnswer(word.eng);
@@ -354,9 +369,7 @@ playButton.addEventListener("click", function () {
 
 function nextWord() {
     if(wordsInGame.length > 0){
-        let audio = new Audio();
-        audio.src = `src/categories/${selectedCategory.replace(/....$/,'')}/${wordsInGame[wordsInGame.length - 1].eng}.mp3`;
-        audio.autoplay = true;
+        audio(`src/categories/${selectedCategory.replace(/....$/,'')}/${wordsInGame[wordsInGame.length - 1].eng}.mp3`);
         wordInGameNow = wordsInGame[wordsInGame.length - 1].eng;
     }
 }
@@ -364,6 +377,7 @@ function nextWord() {
 function checkAnswer(answer) {
     let star = document.createElement('div');
     if(answer == wordInGameNow){
+        setData(answer, true);
         star.className = 'starSuccess';
         wordsInGame.splice(wordsInGame.length-1,1);
         if(wordsInGame.length > 0){
@@ -389,6 +403,7 @@ function checkAnswer(answer) {
         }
     }
     else{
+        setData(answer, false);
         audio(`src/error.mp3`);
         setTimeout(audio(`src/categories/${selectedCategory.replace(/....$/,'')}/${wordsInGame[wordsInGame.length - 1].eng}.mp3`), 1000);
         star.className = 'starLose';
@@ -412,4 +427,19 @@ function audio(src) {
     let audio = new Audio();
     audio.src = src;
     audio.autoplay = true;
+}
+
+function setData(word, result) {
+
+    if(userData[word] == undefined){
+        userData[word] = {tryCount: 0, successCount: 0, errorsCount: 0};
+    }
+    userData[word].tryCount ++;
+    if(result){
+        userData[word].successCount ++;
+    }
+    else{
+        userData[word].errorsCount ++;
+    }
+    localStorage.setItem('userData',JSON.stringify(userData) );
 }

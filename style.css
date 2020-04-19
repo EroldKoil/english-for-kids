@@ -297,7 +297,7 @@ header{
     -webkit-transition: box-shadow .25s linear,-webkit-transform .7s;
     transition: box-shadow .25s linear,-webkit-transform .7s;
     transition: box-shadow .25s linear,transform .7s;
-    transition: box-shadow .25s linear,transform .7s,-webkit-transform .7s;
+    transition: .25s linear,transform .7s,-webkit-transform .7s;
 }
 
 .card-rotate{
@@ -306,6 +306,7 @@ header{
     transform: rotateY(180deg);
     -webkit-transform: rotateY(180deg);
     transition: transform .7s,-webkit-transform .7s;
+
 }
 
 .word-container__card:hover {
