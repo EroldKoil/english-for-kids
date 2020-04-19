@@ -1,11 +1,22 @@
 let userData = localStorage.getItem('userData') == undefined?null: JSON.parse(localStorage.getItem('userData'));
 
-let content;
+let contentMainMenu;
 let leftPanel;
-let mode = 'training';
+let mode = 'train';
 let switchMode;
 let checkboxPanelButton;
 let checkboxMode;
+let header;
+let categoryOpen;
+let categoryContentOpen;
+let main;
+let playButton;
+let isGameStart = false;
+let errorsCount = 0;
+let selectedCategory = 'mainMenu-nav';
+let wordsInGame = [];
+let wordInGameNow;
+let resultsDom;
 
 let wordsArray = [
 	{name: 'numbers', values:[
@@ -41,7 +52,7 @@ let wordsArray = [
             {eng:'cat',ru:'кот'},
             {eng:'cow',ru:'корова'},
             {eng:'dog',ru:'пёс'},
-            {eng:'elephant',ru:'слдон'},
+            {eng:'elephant',ru:'слон'},
             {eng:'fish',ru:'рыба'},
             {eng:'horse',ru:'лошадь'},
             {eng:'monkey',ru:'обезьяна'},
@@ -88,7 +99,7 @@ let stats = [
 	{name: 'one', numUse: 0, numErrors:0},
 ];
 
-
+createDocument();
 
 function  createDocument() {
 	header = document.createElement("header");
@@ -110,41 +121,61 @@ function  createDocument() {
     `;
 
 
-	content = document.createElement("main");
-	content.id = 'content';
-	
+	main = document.createElement("main");
+    contentMainMenu = document.createElement("div");
+    contentMainMenu.id = 'contentMainMenu';
+    contentMainMenu.className = 'contentMainMenu';
+
+    categoryOpen = document.createElement('div');
+    categoryOpen.className = 'categoryOpen';
+    categoryOpen.innerHTML = `
+        <div class="resultsStars"></div>
+        <div class="categoryContentOpen"></div>
+        <div class="play-button" id="play-button">Start game</div>
+    `;
+
+    resultsDom = document.createElement("div");
+    resultsDom.className = 'resultsDom';
+
+    main.appendChild(categoryOpen);
+    main.appendChild(contentMainMenu);
+    main.appendChild(resultsDom);
+
+
+
 	leftPanel = document.createElement("nav");
 	leftPanel.className = 'leftPanel';
 	leftPanel.id = 'leftPanel';
     let mainMenuLink = document.createElement("div");
-    mainMenuLink.id = 'mainMenu';
-    mainMenuLink.className = 'leftPanel__line';
+    mainMenuLink.id = 'mainMenu-nav';
+    mainMenuLink.className = 'leftPanel__line selectedCategory';
     mainMenuLink.innerText = 'menu';
     leftPanel.appendChild(mainMenuLink);
 
     wordsArray.forEach(function (el) {
         let link = document.createElement("div");
         link.className = 'leftPanel__line';
-        link.id = el.name;
+        link.id = el.name + '-nav';
         link.innerText = el.name;
         leftPanel.appendChild(link);
 
         let contentCategory = document.createElement("div");
-        contentCategory.className = 'content__categories';
+        contentCategory.className = 'content__categories content__categoriesTrainMode';
         contentCategory.id = el.name;
         contentCategory.innerHTML = `
         <img src="src/categories/${el.name}/categoryImage.jpg">
         ${el.name}`
         ;
-        content.appendChild(contentCategory);
+        contentMainMenu.appendChild(contentCategory);
     });
 
+    let body = document.getElementById('body');
     body.appendChild(header);
-    body.appendChild(content);
+    body.appendChild(main);
     body.appendChild(leftPanel);
 
-
-
+    categoryContentOpen = document.querySelector('.categoryContentOpen');
+    playButton = document.getElementById('play-button');
     checkboxMode =  document.getElementById('checkboxMode');
     checkboxPanelButton =  document.getElementById('checkboxPanelButton');
 
@@ -158,14 +189,234 @@ function  createDocument() {
     });
 
     checkboxMode.addEventListener("change", function () {
+       endGame();
+
+       let categoryContentOpen = document.querySelector('categoryContentOpen');
 
         if (checkboxMode.checked) {
+            mode = 'play';
             leftPanel.classList.add('leftPanelGameMode');
+            contentMainMenu.childNodes.forEach(function (child) {
+                child.classList.add('content__categoriesGameMode');
+                child.classList.remove('content__categoriesTrainMode');
+                document.querySelectorAll('.word-container__card_header').forEach(function (el) {
+                    el.classList.add('card-header-invisible');
+                });
+                document.querySelectorAll('.rotate').forEach(function (el) {
+                    el.classList.add('rotate-invisible');
+                });
+                playButton.classList.remove('playButton-invisible');
 
-        }
-        else{
+            });
+        } else {
+            mode = 'train';
             leftPanel.classList.remove('leftPanelGameMode');
+            contentMainMenu.childNodes.forEach(function (child) {
+                child.classList.add('content__categoriesTrainMode');
+                child.classList.remove('content__categoriesGameMode');
 
+                document.querySelectorAll('.word-container__card_header').forEach(function (el) {
+                    el.classList.remove('card-header-invisible');
+                });
+                document.querySelectorAll('.rotate').forEach(function (el) {
+                    el.classList.remove('rotate-invisible');
+                });
+                playButton.classList.add('playButton-invisible');
+            });
         }
     });
+
+    contentMainMenu.addEventListener("click", function (event) {
+        let target = event.target;
+        if(target.id != 'contentMainMenu'){
+            target = target.parentNode.id == 'contentMainMenu'? target:target.parentNode;
+            openCategory(target.id);
+        }
+    });
+
+    leftPanel.addEventListener("click", function (event) {
+        let target = event.target;
+        if(target.id != 'leftPanel'){
+            if(target.id == 'mainMenu-nav'){
+                categoryOpen.style.display = 'none';
+                contentMainMenu.style.display = 'flex';
+                checkboxPanelButton.checked = 0;
+                leftPanel.classList.remove('leftPanelOpen');
+                isGameStart = false;
+                playButton.classList.remove('play-button-in-game');
+
+                document.getElementById(selectedCategory).classList.remove('selectedCategory');
+                selectedCategory = target.id;
+                target.classList.add('selectedCategory');
+            }
+            else{
+                let str = target.id.replace(/....$/,'');
+                openCategory(str);
+            }
+        }
+    });
+
+
+
+}
+
+function openCategory(name) {
+    endGame();
+    document.getElementById(selectedCategory).classList.remove('selectedCategory');
+    selectedCategory = name + '-nav';
+    document.getElementById(selectedCategory).classList.add('selectedCategory');
+
+    playButton.classList.remove('play-button-in-game');
+    checkboxPanelButton.checked = 0;
+    leftPanel.classList.remove('leftPanelOpen');
+    document.querySelector('.resultsStars').innerHTML = '';
+    document.querySelector('.categoryContentOpen').innerHTML = '';
+    if(mode == 'train'){
+        playButton.classList.add('playButton-invisible');
+    }
+
+    wordsArray.forEach(function (el) {
+        if(el.name == name){
+            for(let i = 0; i < el.values.length; i++){
+                let word = el.values[i];
+                let wordElement = document.createElement("div");
+                wordElement.className = 'word-container';
+                wordElement.id = word.eng;
+                wordElement.innerHTML = `
+                        <div class='word-container__card'>
+                            <div class="front" 
+                            style='background-image: url("src/categories/${el.name}/${word.eng + '.jpg'}");'>
+                                <div class='word-container__card_header ${mode == 'play'?'card-header-invisible':''}'>${word.eng}</div>
+                            </div>
+                             <div class="back" 
+                            style='background-image: url("src/categories/${el.name}/${word.eng + '.jpg'}");'>
+                                <div class='word-container__card_header'>${word.ru}</div>
+                            </div>
+                           
+                        </div>                    
+                        `;
+                let rotateButton = document.createElement("div");
+                rotateButton.className = mode == 'play'?'rotate rotate-invisible' : 'rotate';
+                wordElement.children[0].appendChild(rotateButton);
+                rotateButton.addEventListener("click", function () {
+                    wordElement.classList.add('card-rotate');
+                    wordElement.addEventListener( 'mouseout' ,function () {
+                        wordElement.classList.remove('card-rotate');
+                    });
+                });
+                wordElement.addEventListener("click", function (event) {
+                    if(event.target.className != 'rotate' && mode == 'train') {
+                        let audio = new Audio();
+                        audio.src = `src/categories/${el.name}/${word.eng}.mp3`;
+                        audio.autoplay = true;
+                    }
+                    if(isGameStart){
+                        checkAnswer(word.eng);
+                    }
+                });
+                categoryContentOpen.appendChild(wordElement);
+            }
+        }
+    });
+    categoryOpen.style.display = 'block';
+    contentMainMenu.style.display = 'none';
+}
+
+playButton.onmousedown = function(){
+    console.log('down');
+    playButton.style.boxShadow = '0px 4px 2px 0px rgba(50, 50, 50, 0.72)';
+    playButton.onmouseup = function(){
+        playButton.style.boxShadow = '0px 4px 12px 0px rgba(50, 50, 50, 0.72)';
+    }
+}
+
+playButton.addEventListener("click", function () {
+    document.querySelector('.resultsStars').innerHTML = '';
+    if(!isGameStart){
+        isGameStart = true;
+        playButton.classList.add('play-button-in-game');
+    }
+    errorsCount = 0;
+    let subArray = [];
+    wordsInGame = [];
+    let cotegoryName = selectedCategory.replace(/....$/,'');
+    console.log('selectedCategory.name = ' + cotegoryName);
+    wordsArray.forEach(function (el) {
+        console.log('el.name = ' + el.name);
+        if(el.name == cotegoryName){
+            wordsInGame = wordsInGame.concat(el.values) ;
+            while(wordsInGame.length > 0){
+                let rand =  Math.floor(Math.random() * (wordsInGame.length));
+                subArray.push(wordsInGame[rand]);
+                wordsInGame.splice(rand,1);
+            }
+            wordsInGame = wordsInGame.concat(subArray) ;
+        }
+    });
+
+
+
+    nextWord();
+});
+
+function nextWord() {
+    if(wordsInGame.length > 0){
+        let audio = new Audio();
+        audio.src = `src/categories/${selectedCategory.replace(/....$/,'')}/${wordsInGame[wordsInGame.length - 1].eng}.mp3`;
+        audio.autoplay = true;
+        wordInGameNow = wordsInGame[wordsInGame.length - 1].eng;
+    }
+}
+
+function checkAnswer(answer) {
+    let star = document.createElement('div');
+    if(answer == wordInGameNow){
+        star.className = 'starSuccess';
+        wordsInGame.splice(wordsInGame.length-1,1);
+        if(wordsInGame.length > 0){
+            audio(`src/success.mp3`);
+            wordInGameNow = wordsInGame[wordsInGame.length - 1].eng;
+            document.getElementById(answer).classList.add('word-container__used');
+            setTimeout(nextWord, 1000);
+            document.querySelector('.resultsStars').appendChild(star);
+        }
+        else{
+            resultsDom.innerHTML = `
+        <div class="resultsDom__text">${errorsCount>0?'Колличество ошибок: ' + errorsCount + '.':'Вы не допустили ни одной ошибки!'}</div>
+        <div class="resultsDom__img"><img src="src/${errorsCount>3?'lose':'victory'}.jpg"></div>
+        `;
+            resultsDom.style.display = 'flex';
+            audio(`src/${errorsCount>3?'lose':'win'}.mp3`);
+            categoryOpen.style.display = 'none';
+            setTimeout(function () {
+                categoryOpen.style.display = 'flex';
+                endGame();
+                resultsDom.style.display = 'none';
+            }, 5000);
+        }
+    }
+    else{
+        audio(`src/error.mp3`);
+        setTimeout(audio(`src/categories/${selectedCategory.replace(/....$/,'')}/${wordsInGame[wordsInGame.length - 1].eng}.mp3`), 1000);
+        star.className = 'starLose';
+        errorsCount ++;
+        document.querySelector('.resultsStars').appendChild(star);
+    }
+
+}
+
+function endGame() {
+    categoryContentOpen.childNodes.forEach(function (el) {
+        el.classList.remove('word-container__used');
+    });
+    document.querySelector('.resultsStars').innerHTML = '';
+    isGameStart = false;
+    document.querySelector('.resultsStars').innerHTML = '';
+    isGameStart = false;
+}
+
+function audio(src) {
+    let audio = new Audio();
+    audio.src = src;
+    audio.autoplay = true;
 }
